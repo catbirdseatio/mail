@@ -67,7 +67,7 @@ jobs:
         port: ${{ env.PORT }}
         key: ${{ secrets.SSH_KEY }}
         source: "."
-        target: "/home/leigh/www/mail"
+        target: "~/www/mail"
     - name: Executing remote command
       uses: appleboy/ssh-action@master
       with:
