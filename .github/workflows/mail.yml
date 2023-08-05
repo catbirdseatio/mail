@@ -68,6 +68,6 @@ jobs:
         port: ${{ env.PORT }}
         key: ${{ secrets.SSH_KEY }}
         run: |
-          source venv/bin/activate \
+          source venv/bin/activate
           pip install -r requirements.txt
     
