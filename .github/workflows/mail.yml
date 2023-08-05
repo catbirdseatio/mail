@@ -68,6 +68,7 @@ jobs:
         port: ${{ env.PORT }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          source home/leigh/www/mail/venv/bin/activate
+          cd ~/www/mail
+          source venv/bin/activate
           pip install -r requirements.txt
     
