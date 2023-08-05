@@ -57,6 +57,15 @@ jobs:
       #   key: ${{ secrets.SSH_KEY }}
       #   source: "."
       #   target: ~/www/
+    - name: copy files via ssh key
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        port: ${{ env.PORT }}
+        key: ${{ ssk.KEY }}
+        source: "."
+        target: "/home/leigh/www/mail"
     - name: Executing remote command
       uses: appleboy/ssh-action@master
       with:
