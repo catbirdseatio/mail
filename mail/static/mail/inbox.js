@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // By default, load the inbox
   load_mailbox("inbox");
+  alert("Hello World!");
 });
 
 function compose_email() {
