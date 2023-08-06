@@ -21,7 +21,7 @@ def index(request):
         return HttpResponseRedirect(reverse("login"))
 
 
-@csrf_exempt
+# @csrf_exempt
 @login_required
 def compose(request):
 
@@ -96,7 +96,7 @@ def mailbox(request, mailbox):
     return JsonResponse([email.serialize() for email in emails], safe=False)
 
 
-@csrf_exempt
+# @csrf_exempt
 @login_required
 def email(request, email_id):
 
