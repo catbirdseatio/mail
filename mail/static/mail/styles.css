@@ -1,3 +1,16 @@
 textarea {
     min-height: 400px;
 }
+
+.email {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: .5rem;
+}
+
+.leftDiv {
+    display: flex;
+    margin-right: .5rem;
+}
