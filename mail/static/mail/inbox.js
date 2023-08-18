@@ -1,3 +1,9 @@
+const BLANK_EMAIL = {
+  recipients: "",
+  subject: "",
+  body: "",
+};
+
 /**
  * Get a cookie's value by name.
  * @param {string} name: name of the cookie value
@@ -42,7 +48,7 @@ const getFields = (form) => {
 };
 
 /**
- *
+ * Retrieve an object with fields as keys and the field values as values
  * @param {*} fields
  * @returns Object with the named fields as keys and the field values as the values
  */
@@ -52,7 +58,7 @@ const getFormValues = (fields) =>
   );
 
 /**
- *
+ * Add a new email in the API.
  * @param {*} values: Form field values
  * @returns a promise
  */
@@ -71,6 +77,27 @@ const postEmail = (values) =>
       err.message = response.statusText;
       throw err;
     }
+  });
+
+/**
+ * Add a new email in the API.
+ * @param {*} values: Form field values
+ * @returns a promise
+ */
+const updateEmail = (emailId, values) =>
+  fetch(`/emails/${emailId}`, {
+    method: "PUT",
+    headers: { "X-CSRFToken": getCookie("csrftoken") },
+    body: JSON.stringify(values),
+  }).then((response) => {
+    if (!response.ok) {
+      // create error object and reject if not a 2xx response code
+      let err = new Error(response.statusText);
+      err.response = response;
+      err.status = response.status;
+      err.message = response.statusText;
+      throw err;
+    } else return response;
   });
 
 /**
@@ -162,23 +189,33 @@ const errorFeedbackWriter = (field, message) => {
 };
 
 const inboxMessageWriter = (container, email) => {
-  console.log(email);
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email");
   emailDiv.dataset.id = email.id;
-  emailDiv.addEventListener("click", emailClickEvent);
-  if (email.read) emailDiv.classList.add("bg-light");
+  emailDiv.addEventListener("click", emailClickHandler);
 
   const leftDiv = document.createElement("div");
   const rightDiv = document.createElement("div");
+  rightDiv.classList.add("right-div");
+  leftDiv.classList.add("left-div");
 
   const senderSpan = document.createElement("span");
+  senderSpan.classList.add("sender");
   senderSpan.innerText = email.sender;
 
   const subjectSpan = document.createElement("span");
+  subjectSpan.classList.add("subject");
   subjectSpan.innerText = email.subject;
 
   rightDiv.innerText = email.timestamp;
+
+  if (email.read) {
+    emailDiv.classList.add("bg-light");
+    rightDiv.classList.add("text-secondary");
+  } else {
+    emailDiv.classList.add("bg-white");
+    rightDiv.classList.add("text-muted");
+  }
 
   leftDiv.appendChild(senderSpan);
   leftDiv.appendChild(subjectSpan);
@@ -190,6 +227,49 @@ const inboxMessageWriter = (container, email) => {
 
 const flash = (message, tag) => {
   console.log(`${tag}: ${message}`);
+};
+
+/**
+ * Write an DOM container for an email message
+ * @param {*} message: an object representing an email message
+ */
+const messageWriter = (email) => {
+  const emailDiv = document.createElement("div");
+  emailDiv.classList.add("email-display");
+
+  const emailHeader = document.createElement("div");
+  emailHeader.classList.add("email-display-header");
+
+  emailHeader.innerHTML = `<p><strong>From:</strong> ${email.sender}</p>
+  <p><strong>To:</strong> ${email.recipients}</p>
+  <p><strong>Subject:</strong> ${email.subject}</p>
+  <p><strong>Timestamp:</strong> ${email.timestamp}</p>`;
+
+  const replyButton = document.createElement("button");
+  replyButton.setAttribute("id", "reply");
+  replyButton.innerText = "Reply";
+  replyButton.classList.add("btn", "btn-outline-primary");
+  emailHeader.appendChild(replyButton);
+
+  const archiveButton = document.createElement("button");
+  archiveButton.setAttribute("id", "archive");
+  archiveButton.innerText = "Archive";
+  const isArchived = email.archived;
+  archiveButton.dataset.archived = isArchived;
+  archiveButton.dataset.id = email.id;
+  const buttonClass = isArchived ? "btn-outline-danger" : "btn-outline-info";
+  archiveButton.classList.add("btn", buttonClass, "mx-2");
+  emailHeader.appendChild(archiveButton);
+
+  emailHeader.innerHTML += "<hr>";
+
+  const emailBody = document.createElement("div");
+  emailBody.classList.add("email-display-body");
+  emailBody.innerText = email.body;
+
+  emailDiv.appendChild(emailHeader);
+  emailDiv.appendChild(emailBody);
+  return emailDiv;
 };
 
 // EVENT HANDLERS
@@ -214,19 +294,44 @@ const composeSubmitHander = (event) => {
   if (formIsValid()) {
     // Create an array of form values
     const values = getFormValues(fields);
+
     postEmail(values)
       .then((data) => flash(data.message, "success"))
       .catch((error) => {
-        if (error.status === 400)
-          flash("User does not exist in system.", "danger");
-        else console.log(error);
+        if (error.status === 400) {
+          const errorMessage = errorFeedbackWriter(
+            fields.recipients,
+            "The user cannot be found in the system."
+          );
+          fields.recipients.parentElement.appendChild(errorMessage);
+        } else console.log(error);
       });
+
+    load_mailbox("inbox");
   } else return;
 };
 
-const emailClickEvent = (event) => {
+const emailClickHandler = (event) => {
   const target = getEmailDiv(event.target);
-  console.log(target.dataset.id);
+  const emailId = target.dataset.id;
+  updateEmail(emailId, { read: true })
+    // .then((data) => console.log(data))
+    .catch((error) => console.log("An error has occurred."));
+  return load_message(emailId);
+};
+
+const replyButtonHandler = (event, email) => {
+  const subject = `Re: ${email.subject}`
+  const recipients = email.sender;
+  const body = `On ${email.timestamp}, ${recipients} said:"${email.body}"`
+  const fields = {recipients, body, subject}
+  console.log(fields)
+  compose_email(fields)
+};
+
+const archiveButtonHandler = (event) => {
+  console.log(event.target)
+  flash("The email has been archived.", "info");
 };
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -251,7 +356,7 @@ document.addEventListener("DOMContentLoaded", function () {
   load_mailbox("inbox");
 });
 
-function compose_email() {
+function compose_email(message = BLANK_EMAIL) {
   const form = document.querySelector("#compose-form");
 
   // Show compose view and hide other views
@@ -259,9 +364,10 @@ function compose_email() {
   document.querySelector("#compose-view").style.display = "block";
 
   // Clear out composition fields
-  form.elements["recipients"].value = "";
-  form.elements["subject"].value = "";
-  form.elements["body"].value = "";
+  Object.keys(message).forEach((field) => (form.elements[field].value = message[field]));
+  // form.elements["recipients"].value = "";
+  // form.elements["subject"].value = "";
+  // form.elements["body"].value = "";
 }
 
 function load_mailbox(mailbox) {
@@ -276,11 +382,43 @@ function load_mailbox(mailbox) {
   }</h3>`;
 
   // get the data
-  fetch("/emails/inbox")
+  fetch(`/emails/${mailbox}`)
     .then((response) => response.json())
     .then((emails) => {
       emails.forEach((email) => inboxMessageWriter(content, email));
-
-      // ... do something else with emails ...
     });
+}
+
+/**
+ * Load a message into the UI
+ * @param {*} emailId: id of the email to load.
+ */
+function load_message(emailId) {
+  // Show the mailbox and hide other views
+  document.querySelector("#emails-view").style.display = "block";
+  document.querySelector("#compose-view").style.display = "none";
+  const content = document.querySelector("#emails-view");
+
+  // clear content div
+  content.innerHTML = "";
+
+  fetch(`/emails/${emailId}`)
+    .then((response) => response.json())
+    .then((email) => {
+      let emailMessage = email;
+      content.appendChild(messageWriter(emailMessage));
+
+      // EventListeners added after the content is mounted.
+      // Reply handler is called by callback function to pass 
+      // an email message
+      document
+        .querySelector("#reply")
+        .addEventListener("click", (event) =>
+          replyButtonHandler(event, emailMessage)
+        );
+      document
+        .querySelector("#archive")
+        .addEventListener("click", archiveButtonHandler);
+    })
+    .catch((error) => console.log(error.message));
 }
