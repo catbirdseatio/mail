@@ -28,6 +28,9 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: 3.11
+    - name: Set up Chrome Webdriver
+      uses: browser-actions/setup-chrome@latest
+      run: chrome --version
     - name: Add environment variables to .env
       run: |
         echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
