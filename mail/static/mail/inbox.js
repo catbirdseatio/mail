@@ -44,7 +44,7 @@ const getEmailDiv = (element) =>
 const getFields = (form) => {
   const rawFields = Array.from(form.elements).filter(
     (field) => field.name !== ""
-  );
+  )
 
   const fields = rawFields.reduce((o, key) => ({ ...o, [key.name]: key }), {});
   return fields;
@@ -52,7 +52,7 @@ const getFields = (form) => {
 
 /**
  * Retrieve an object with fields as keys and the field values as values
- * @param {*} fields
+ * @param {*} fields: An object containing form fields
  * @returns Object with the named fields as keys and the field values as the values
  */
 const getFormValues = (fields) =>
@@ -125,7 +125,7 @@ const clearIsValid = () => {
 };
 
 /**
- *
+ * Function to determine if a form is valid.
  * @param {*} form HTML form
  * @returns true if .is-invalid does not appear in form.
  */
@@ -162,10 +162,10 @@ const emailAddressValidator = (field) => {
 
 /**
  * Validate for an input length of minimum of 1.
- * @param {*} field DOM form field
+ * @param {*} field: DOM form field
  */
 const requiredFieldValidator = (field) => {
-  if (field.value <= 0) {
+  if (field.value.trim() <= 0) {
     const errorMessage = errorFeedbackWriter(field, "This field is required.");
     field.parentElement.append(errorMessage);
   } else {
@@ -303,7 +303,10 @@ const composeSubmitHander = (event) => {
     const values = getFormValues(fields);
 
     postEmail(values)
-      .then((data) => flash(data.message, "success"))
+      .then((data) => {
+        flash(data.message, "success")
+        load_mailbox("inbox");
+      })
       .catch((error) => {
         if (error.status === 400) {
           const errorMessage = errorFeedbackWriter(
@@ -311,10 +314,9 @@ const composeSubmitHander = (event) => {
             "The user cannot be found in the system."
           );
           fields.recipients.parentElement.appendChild(errorMessage);
+          return;
         } else console.log(error);
       });
-
-    load_mailbox("inbox");
   } else return;
 };
 
@@ -339,9 +341,7 @@ const replyButtonHandler = (event, email) => {
 const archiveButtonHandler = (event) => {
   const button = event.target;
   const { id: emailID, archived: isArchived } = button.dataset;
-  console.log("IS ARCHIVED: ", isArchived);
   const archived = parseInt(isArchived) ? false : true;
-  console.log(archived);
   const body = JSON.stringify({ archived });
   fetch(`/emails/${emailID}`, {
     method: "PUT",
@@ -388,12 +388,13 @@ document.addEventListener("DOMContentLoaded", function () {
  * @param {*} message An object containing the fields for a valid email.
  */
 function compose_email(event, message = BLANK_EMAIL) {
+  clearErrorMessages();
+  clearIsValid();
   const form = document.querySelector("#compose-form");
 
   // Show compose view and hide other views
   document.querySelector("#emails-view").style.display = "none";
   document.querySelector("#compose-view").style.display = "block";
-  console.log(message);
   // Clear out composition fields
   Object.keys(message).forEach((field) => {
     form.elements[field].value = "";
