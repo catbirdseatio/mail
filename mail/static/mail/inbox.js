@@ -44,7 +44,7 @@ const getEmailDiv = (element) =>
 const getFields = (form) => {
   const rawFields = Array.from(form.elements).filter(
     (field) => field.name !== ""
-  )
+  );
 
   const fields = rawFields.reduce((o, key) => ({ ...o, [key.name]: key }), {});
   return fields;
@@ -304,7 +304,7 @@ const composeSubmitHander = (event) => {
 
     postEmail(values)
       .then((data) => {
-        flash(data.message, "success")
+        flash(data.message, "success");
         load_mailbox("inbox");
       })
       .catch((error) => {
@@ -427,7 +427,7 @@ function load_mailbox(mailbox) {
  */
 function load_message(emailId, isSent) {
   const sent = isSent ? true : false;
-  
+
   // Show the mailbox and hide other views
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
@@ -441,7 +441,7 @@ function load_message(emailId, isSent) {
     .then((email) => {
       let emailMessage = email;
       content.appendChild(messageWriter(emailMessage, sent));
-      const archiveButton = document.querySelector("#archive")
+      const archiveButton = document.querySelector("#archive");
 
       // EventListeners added after the content is mounted.
       // Reply handler is called by callback function to pass
@@ -451,7 +451,8 @@ function load_message(emailId, isSent) {
         .addEventListener("click", (event) =>
           replyButtonHandler(event, emailMessage)
         );
-      if (archiveButton) archiveButton.addEventListener("click", archiveButtonHandler);
+      if (archiveButton)
+        archiveButton.addEventListener("click", archiveButtonHandler);
     })
     .catch((error) => console.log(error.message));
 }
