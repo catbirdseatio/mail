@@ -1,3 +1,6 @@
+/**
+ * Object containing the fields for an all new email message.
+ */
 const BLANK_EMAIL = {
   recipients: "",
   subject: "",
@@ -36,7 +39,7 @@ const getEmailDiv = (element) =>
 
 /**
  * Get an object of all the named fields in an HTML form
- * @param {*} form DOM element
+ * @param {*} form: DOM element containing a form
  */
 const getFields = (form) => {
   const rawFields = Array.from(form.elements).filter(
@@ -188,10 +191,11 @@ const errorFeedbackWriter = (field, message) => {
   return errorMessage;
 };
 
-const inboxMessageWriter = (container, email) => {
+const inboxMessageWriter = (container, email, mailbox) => {
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email");
   emailDiv.dataset.id = email.id;
+  emailDiv.dataset.sent = mailbox === "sent" ? 1 : 0;
   emailDiv.addEventListener("click", emailClickHandler);
 
   const leftDiv = document.createElement("div");
@@ -233,7 +237,7 @@ const flash = (message, tag) => {
  * Write an DOM container for an email message
  * @param {*} message: an object representing an email message
  */
-const messageWriter = (email) => {
+const messageWriter = (email, sentMailbox = false) => {
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email-display");
 
@@ -251,15 +255,18 @@ const messageWriter = (email) => {
   replyButton.classList.add("btn", "btn-outline-primary");
   emailHeader.appendChild(replyButton);
 
-  const archiveButton = document.createElement("button");
-  archiveButton.setAttribute("id", "archive");
-  archiveButton.innerText = "Archive";
-  const isArchived = email.archived;
-  archiveButton.dataset.archived = isArchived;
-  archiveButton.dataset.id = email.id;
-  const buttonClass = isArchived ? "btn-outline-danger" : "btn-outline-info";
-  archiveButton.classList.add("btn", buttonClass, "mx-2");
-  emailHeader.appendChild(archiveButton);
+  // If the mailbox is not sent, add the archive button
+  if (!sentMailbox) {
+    const archiveButton = document.createElement("button");
+    archiveButton.setAttribute("id", "archive");
+    const isArchived = email.archived ? 1 : 0;
+    archiveButton.dataset.archived = isArchived;
+    archiveButton.dataset.id = email.id;
+    const buttonClass = isArchived ? "btn-outline-danger" : "btn-outline-info";
+    archiveButton.innerText = isArchived ? "Unarchive" : "Archive";
+    archiveButton.classList.add("btn", buttonClass, "mx-2");
+    emailHeader.appendChild(archiveButton);
+  }
 
   emailHeader.innerHTML += "<hr>";
 
@@ -313,25 +320,44 @@ const composeSubmitHander = (event) => {
 
 const emailClickHandler = (event) => {
   const target = getEmailDiv(event.target);
-  const emailId = target.dataset.id;
+  const { id: emailId, sent } = target.dataset;
+  const isSent = parseInt(sent);
   updateEmail(emailId, { read: true })
     // .then((data) => console.log(data))
     .catch((error) => console.log("An error has occurred."));
-  return load_message(emailId);
+  return load_message(emailId, isSent);
 };
 
 const replyButtonHandler = (event, email) => {
-  const subject = `Re: ${email.subject}`
+  const subject = `Re: ${email.subject}`;
   const recipients = email.sender;
-  const body = `On ${email.timestamp}, ${recipients} said:"${email.body}"`
-  const fields = {recipients, body, subject}
-  console.log(fields)
-  compose_email(fields)
+  const body = `On ${email.timestamp}, ${recipients} said:"${email.body}"`;
+  const fields = { recipients, body, subject };
+  compose_email(event, fields);
 };
 
 const archiveButtonHandler = (event) => {
-  console.log(event.target)
-  flash("The email has been archived.", "info");
+  const button = event.target;
+  const { id: emailID, archived: isArchived } = button.dataset;
+  console.log("IS ARCHIVED: ", isArchived);
+  const archived = parseInt(isArchived) ? false : true;
+  console.log(archived);
+  const body = JSON.stringify({ archived });
+  fetch(`/emails/${emailID}`, {
+    method: "PUT",
+    headers: { "X-CSRFToken": getCookie("csrftoken") },
+    body,
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error(response.errorMessage);
+      else {
+        button.dataset.archived = archived;
+        button.classList.toggle("btn-outline-danger");
+        button.classList.toggle("btn-outline-info");
+        button.innerText = archived ? "Unarchive" : "Archive";
+      }
+    })
+    .catch((error) => console.log(error));
 };
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -356,18 +382,23 @@ document.addEventListener("DOMContentLoaded", function () {
   load_mailbox("inbox");
 });
 
-function compose_email(message = BLANK_EMAIL) {
+/**
+ * Display and fill out the fields of a form.
+ * @param {*} event: An event object.
+ * @param {*} message An object containing the fields for a valid email.
+ */
+function compose_email(event, message = BLANK_EMAIL) {
   const form = document.querySelector("#compose-form");
 
   // Show compose view and hide other views
   document.querySelector("#emails-view").style.display = "none";
   document.querySelector("#compose-view").style.display = "block";
-
+  console.log(message);
   // Clear out composition fields
-  Object.keys(message).forEach((field) => (form.elements[field].value = message[field]));
-  // form.elements["recipients"].value = "";
-  // form.elements["subject"].value = "";
-  // form.elements["body"].value = "";
+  Object.keys(message).forEach((field) => {
+    form.elements[field].value = "";
+    form.elements[field].value = message[field];
+  });
 }
 
 function load_mailbox(mailbox) {
@@ -385,7 +416,7 @@ function load_mailbox(mailbox) {
   fetch(`/emails/${mailbox}`)
     .then((response) => response.json())
     .then((emails) => {
-      emails.forEach((email) => inboxMessageWriter(content, email));
+      emails.forEach((email) => inboxMessageWriter(content, email, mailbox));
     });
 }
 
@@ -393,7 +424,9 @@ function load_mailbox(mailbox) {
  * Load a message into the UI
  * @param {*} emailId: id of the email to load.
  */
-function load_message(emailId) {
+function load_message(emailId, isSent) {
+  const sent = isSent ? true : false;
+  
   // Show the mailbox and hide other views
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
@@ -406,19 +439,18 @@ function load_message(emailId) {
     .then((response) => response.json())
     .then((email) => {
       let emailMessage = email;
-      content.appendChild(messageWriter(emailMessage));
+      content.appendChild(messageWriter(emailMessage, sent));
+      const archiveButton = document.querySelector("#archive")
 
       // EventListeners added after the content is mounted.
-      // Reply handler is called by callback function to pass 
+      // Reply handler is called by callback function to pass
       // an email message
       document
         .querySelector("#reply")
         .addEventListener("click", (event) =>
           replyButtonHandler(event, emailMessage)
         );
-      document
-        .querySelector("#archive")
-        .addEventListener("click", archiveButtonHandler);
+      if (archiveButton) archiveButton.addEventListener("click", archiveButtonHandler);
     })
     .catch((error) => console.log(error.message));
 }
