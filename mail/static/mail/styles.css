@@ -24,7 +24,7 @@ textarea {
 }
 
 .sender {
-    flex: 0 0 15rem;
+    flex: 0 0 50%;
     font-weight: bold;
 }
 
