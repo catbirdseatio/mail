@@ -33,15 +33,46 @@ textarea {
         flex-direction: column;
     }
 
-    .left-div, .right-div {
+    .left-div,
+    .right-div {
         width: 100%;
     }
 
-    .sender, .subject {
+    .sender,
+    .subject {
         flex: 0 0 50%;
     }
 }
 
-.email-display-header > p {
+.email-display-header>p {
     margin-bottom: 0;
+}
+
+ .fade-in {
+    animation: fade-in 5s ease;
+}
+
+.fade-out{
+    animation: fade-out 1s ease 2s forwards;
+} 
+
+/* Alert animation */
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 100%;
+    }
+}
+
+@keyframes fade-out {
+    0% {
+        opacity: 100%;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }

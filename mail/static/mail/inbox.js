@@ -1,5 +1,5 @@
 /**
- * Object containing the fields for an all new email message.
+ * An empty email object.
  */
 const BLANK_EMAIL = {
   recipients: "",
@@ -8,9 +8,9 @@ const BLANK_EMAIL = {
 };
 
 /**
- * Get a cookie's value by name.
- * @param {string} name: name of the cookie value
- * @returns value of the named cookie value.
+ * Retrieve the value of a cookie.
+ * @param {string} name Name of the cookie
+ * @returns cookie value
  */
 const getCookie = (name) => {
   let cookieValue = null;
@@ -28,9 +28,10 @@ const getCookie = (name) => {
 };
 
 /**
- * A recursive function to return an 'email' element
- * @param {*} element: an 'email' element or an element contained by an 'email' element.
- * @returns an email element
+ * Returns a DOM element with the class name `email`.
+ * This function is recursive.
+ * @param {*} element A DOM element
+ * @returns DOM element with the class name "email"
  */
 const getEmailDiv = (element) =>
   element.classList.contains("email")
@@ -38,22 +39,22 @@ const getEmailDiv = (element) =>
     : getEmailDiv(element.parentElement);
 
 /**
- * Get an object of all the named fields in an HTML form
- * @param {*} form: DOM element containing a form
+ * Retrieve field data from a form
+ * @param {} form
+ * @returns an object containing the fields of a form
  */
 const getFields = (form) => {
   const rawFields = Array.from(form.elements).filter(
     (field) => field.name !== ""
   );
-
   const fields = rawFields.reduce((o, key) => ({ ...o, [key.name]: key }), {});
   return fields;
 };
 
 /**
- * Retrieve an object with fields as keys and the field values as values
- * @param {*} fields: An object containing form fields
- * @returns Object with the named fields as keys and the field values as the values
+ * Get an object containing form values, given a fields object.
+ * @param {*} fields A object containing form fields.
+ * @returns An object containing form values.
  */
 const getFormValues = (fields) =>
   Object.fromEntries(
@@ -61,9 +62,8 @@ const getFormValues = (fields) =>
   );
 
 /**
- * Add a new email in the API.
- * @param {*} values: Form field values
- * @returns a promise
+ * Send a POST request to the `/emails` endpoint.
+ * @param {*} values An object containing the email values.
  */
 const postEmail = (values) =>
   fetch("/emails", {
@@ -73,7 +73,6 @@ const postEmail = (values) =>
   }).then((response) => {
     if (response.ok) return response.json();
     else {
-      // create error object and reject if not a 2xx response code
       let err = new Error(response.statusText);
       err.response = response;
       err.status = response.status;
@@ -83,9 +82,9 @@ const postEmail = (values) =>
   });
 
 /**
- * Add a new email in the API.
- * @param {*} values: Form field values
- * @returns a promise
+ * Send a PUT request to the `emails/:id` endpoint.
+ * @param {*} emailId ID of the email to update.
+ * @param {*} values Object containing the values to be updated.
  */
 const updateEmail = (emailId, values) =>
   fetch(`/emails/${emailId}`, {
@@ -94,7 +93,6 @@ const updateEmail = (emailId, values) =>
     body: JSON.stringify(values),
   }).then((response) => {
     if (!response.ok) {
-      // create error object and reject if not a 2xx response code
       let err = new Error(response.statusText);
       err.response = response;
       err.status = response.status;
@@ -104,7 +102,7 @@ const updateEmail = (emailId, values) =>
   });
 
 /**
- * Remove invalid messages from the form.
+ * Remove all error messages from the page.
  */
 const clearErrorMessages = () => {
   document
@@ -116,7 +114,7 @@ const clearErrorMessages = () => {
 };
 
 /**
- * Remove valid messages from the form.
+ * Clear the `is-valid` class from the page.
  */
 const clearIsValid = () => {
   document
@@ -125,28 +123,24 @@ const clearIsValid = () => {
 };
 
 /**
- * Function to determine if a form is valid.
- * @param {*} form HTML form
- * @returns true if .is-invalid does not appear in form.
+ * Validate the form
+ * @param {*} form A form DOM element.
+ * @returns true if there are no errors, false if not.
  */
 const formIsValid = (form) =>
   document.querySelectorAll(".is-invalid").length <= 0;
 
-// VALIDATORS
-
 /**
- * Validate email addresses in recipients.
- * @param {*} field : The field being validated.
+ * Validate the email field; if valid set the the field to `is-valid`, else write an error message.
+ * @param {*} field A form field DOM element that requires an email input.
  */
 const emailAddressValidator = (field) => {
   const re =
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-
   const recipients = field.value
     .split(",")
     .map((recipient) => recipient.trim())
     .filter((recipient) => recipient.length !== 0);
-
   recipients.forEach((recipient) => {
     if (re.test(recipient)) {
       field.classList.add("is-valid");
@@ -161,8 +155,8 @@ const emailAddressValidator = (field) => {
 };
 
 /**
- * Validate for an input length of minimum of 1.
- * @param {*} field: DOM form field
+ * Validate a field that is required.
+ * @param {*} field A field DOM element that is required.
  */
 const requiredFieldValidator = (field) => {
   if (field.value.trim() <= 0) {
@@ -173,16 +167,13 @@ const requiredFieldValidator = (field) => {
   }
 };
 
-// DOM ELEMENT WRITERS
-
 /**
- * Write error feedback and add `is-invalid` class to field.
- * @param {*} field: The DOM element of the field
- * @param {*} message The text to be written
- * @returns a div containing the error message
+ * Write a error feedback message to the DOM.
+ * @param {*} field A form field DOM
+ * @param {*} message An error message to be added to the field.
+ * @returns a DOM element containing the error message.
  */
 const errorFeedbackWriter = (field, message) => {
-  // remove previous valid/invalid
   field.classList.remove("is-invalid", "is-valid");
   field.classList.add("is-invalid");
   const errorMessage = document.createElement("div");
@@ -191,6 +182,12 @@ const errorFeedbackWriter = (field, message) => {
   return errorMessage;
 };
 
+/**
+ * Write an inbox message to the page.
+ * @param {*} container A DOM element that contains the email messages.
+ * @param {*} email Email to be written to the container.
+ * @param {*} mailbox The mailbox that the email belongs to.
+ */
 const inboxMessageWriter = (container, email, mailbox) => {
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email");
@@ -202,17 +199,16 @@ const inboxMessageWriter = (container, email, mailbox) => {
   const rightDiv = document.createElement("div");
   rightDiv.classList.add("right-div");
   leftDiv.classList.add("left-div");
-
+  
   const senderSpan = document.createElement("span");
   senderSpan.classList.add("sender");
   senderSpan.innerText = email.sender;
-
+  
   const subjectSpan = document.createElement("span");
   subjectSpan.classList.add("subject");
   subjectSpan.innerText = email.subject;
-
   rightDiv.innerText = email.timestamp;
-
+  
   if (email.read) {
     emailDiv.classList.add("bg-light");
     rightDiv.classList.add("text-secondary");
@@ -221,41 +217,47 @@ const inboxMessageWriter = (container, email, mailbox) => {
     rightDiv.classList.add("text-muted");
   }
 
+  // Add inner divs and spans to message div
   leftDiv.appendChild(senderSpan);
   leftDiv.appendChild(subjectSpan);
-
   emailDiv.appendChild(leftDiv);
   emailDiv.appendChild(rightDiv);
+
+  // Add to the container.
   container.appendChild(emailDiv);
 };
 
+/**
+ * Write a flash message to the screen for 3 seconds.
+ * @param {*} message The flash message to be displayed.
+ * @param {*} tag Type of tag that is being displayed.
+ */
 const flash = (message, tag) => {
-  console.log(`${tag}: ${message}`);
+  const flashContainer = document.querySelector(".flash-container");
+  const flashMessage = document.createElement("div");
+  flashMessage.classList.add("alert", `alert-${tag}`, "fade-in");
+  flashMessage.innerText = message;
+  flashContainer.appendChild(flashMessage);
+  flashMessage.classList.add("fade-out");
+  setTimeout(() => {
+    flashContainer.removeChild(flashMessage);
+  }, 3000);
 };
 
-/**
- * Write an DOM container for an email message
- * @param {*} message: an object representing an email message
- */
 const messageWriter = (email, sentMailbox = false) => {
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email-display");
-
   const emailHeader = document.createElement("div");
   emailHeader.classList.add("email-display-header");
-
   emailHeader.innerHTML = `<p><strong>From:</strong> ${email.sender}</p>
   <p><strong>To:</strong> ${email.recipients}</p>
   <p><strong>Subject:</strong> ${email.subject}</p>
   <p><strong>Timestamp:</strong> ${email.timestamp}</p>`;
-
   const replyButton = document.createElement("button");
   replyButton.setAttribute("id", "reply");
   replyButton.innerText = "Reply";
   replyButton.classList.add("btn", "btn-outline-primary");
   emailHeader.appendChild(replyButton);
-
-  // If the mailbox is not sent, add the archive button
   if (!sentMailbox) {
     const archiveButton = document.createElement("button");
     archiveButton.setAttribute("id", "archive");
@@ -267,41 +269,26 @@ const messageWriter = (email, sentMailbox = false) => {
     archiveButton.classList.add("btn", buttonClass, "mx-2");
     emailHeader.appendChild(archiveButton);
   }
-
   emailHeader.innerHTML += "<hr>";
-
   const emailBody = document.createElement("div");
   emailBody.classList.add("email-display-body");
   emailBody.innerText = email.body;
-
   emailDiv.appendChild(emailHeader);
   emailDiv.appendChild(emailBody);
   return emailDiv;
 };
-
-// EVENT HANDLERS
-
-/**
- * Handle compose form submission.
- * @param {*} event DOM event
- */
 const composeSubmitHander = (event) => {
   event.preventDefault();
   clearErrorMessages();
   clearIsValid();
-
   const form = event.target;
   const fields = getFields(form);
-
   requiredFieldValidator(fields.body);
   requiredFieldValidator(fields.subject);
   requiredFieldValidator(fields.recipients);
   emailAddressValidator(fields.recipients);
-
   if (formIsValid()) {
-    // Create an array of form values
     const values = getFormValues(fields);
-
     postEmail(values)
       .then((data) => {
         flash(data.message, "success");
@@ -319,17 +306,15 @@ const composeSubmitHander = (event) => {
       });
   } else return;
 };
-
 const emailClickHandler = (event) => {
   const target = getEmailDiv(event.target);
   const { id: emailId, sent } = target.dataset;
   const isSent = parseInt(sent);
-  updateEmail(emailId, { read: true })
-    // .then((data) => console.log(data))
-    .catch((error) => console.log("An error has occurred."));
+  updateEmail(emailId, { read: true }).catch((error) =>
+    console.log("An error has occurred.")
+  );
   return load_message(emailId, isSent);
 };
-
 const replyButtonHandler = (event, email) => {
   const subject = `Re: ${email.subject}`;
   const recipients = email.sender;
@@ -337,7 +322,6 @@ const replyButtonHandler = (event, email) => {
   const fields = { recipients, body, subject };
   compose_email(event, fields);
 };
-
 const archiveButtonHandler = (event) => {
   const button = event.target;
   const { id: emailID, archived: isArchived } = button.dataset;
@@ -355,13 +339,12 @@ const archiveButtonHandler = (event) => {
         button.classList.toggle("btn-outline-danger");
         button.classList.toggle("btn-outline-info");
         button.innerText = archived ? "Unarchive" : "Archive";
+        flash(flashMessage, "info");
       }
     })
     .catch((error) => console.log(error));
 };
-
 document.addEventListener("DOMContentLoaded", function () {
-  // Use buttons to toggle between views
   document
     .querySelector("#inbox")
     .addEventListener("click", () => load_mailbox("inbox"));
@@ -372,80 +355,47 @@ document.addEventListener("DOMContentLoaded", function () {
     .querySelector("#archived")
     .addEventListener("click", () => load_mailbox("archive"));
   document.querySelector("#compose").addEventListener("click", compose_email);
-
-  // Add event handlers
   document
     .querySelector("#compose-form")
     .addEventListener("submit", composeSubmitHander);
-
-  // By default, load the inbox
   load_mailbox("inbox");
 });
-
-/**
- * Display and fill out the fields of a form.
- * @param {*} event: An event object.
- * @param {*} message An object containing the fields for a valid email.
- */
 function compose_email(event, message = BLANK_EMAIL) {
   clearErrorMessages();
   clearIsValid();
   const form = document.querySelector("#compose-form");
-
-  // Show compose view and hide other views
   document.querySelector("#emails-view").style.display = "none";
   document.querySelector("#compose-view").style.display = "block";
-  // Clear out composition fields
   Object.keys(message).forEach((field) => {
     form.elements[field].value = "";
     form.elements[field].value = message[field];
   });
 }
-
 function load_mailbox(mailbox) {
-  // Show the mailbox and hide other views
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
-
   const content = document.querySelector("#emails-view");
-  // Show the mailbox name
   content.innerHTML = `<h3>${
     mailbox.charAt(0).toUpperCase() + mailbox.slice(1)
   }</h3>`;
-
-  // get the data
   fetch(`/emails/${mailbox}`)
     .then((response) => response.json())
     .then((emails) => {
       emails.forEach((email) => inboxMessageWriter(content, email, mailbox));
     });
 }
-
-/**
- * Load a message into the UI
- * @param {*} emailId: id of the email to load.
- */
 function load_message(emailId, isSent) {
   const sent = isSent ? true : false;
-
-  // Show the mailbox and hide other views
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
   const content = document.querySelector("#emails-view");
-
-  // clear content div
   content.innerHTML = "";
-
   fetch(`/emails/${emailId}`)
     .then((response) => response.json())
     .then((email) => {
       let emailMessage = email;
       content.appendChild(messageWriter(emailMessage, sent));
       const archiveButton = document.querySelector("#archive");
-
-      // EventListeners added after the content is mounted.
-      // Reply handler is called by callback function to pass
-      // an email message
       document
         .querySelector("#reply")
         .addEventListener("click", (event) =>
