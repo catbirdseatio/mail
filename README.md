@@ -31,3 +31,10 @@ SERVER_USERNAME|deploy| The name of the user that can run sudo commands on the s
 |SSH_KEY|deploy|Private key used to access server.|
 |SUDO_PASSWORD|deploy|The password of the SERVER_USERNAME user.|
 |TARGET_DIRECTORY|deploy|The directory where the application lives.|
+
+These variables are used:
+
+| Name         | Stage | Description                                         |
+| ------------ | ----- | --------------------------------------------------- |
+|ALLOWED_HOSTS|build|The domains allowed to access the app in the build stage. Usually set to `127.0.0.1,localhost`.
+| PORT | deploy | The SSH port used to access the server. Hardcoded to port 22.|

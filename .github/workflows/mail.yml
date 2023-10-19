@@ -39,6 +39,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        cat .env
     - name: Run migrations
       run: python manage.py migrate
     - name: Run tests
@@ -84,5 +85,4 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           echo "${{ secrets.SUDO_PASSWORD}}" | sudo -S supervisorctl restart mail_gunicorn
-          echo "${{ secrets.TARGET_DIRECTORY }}"
   
