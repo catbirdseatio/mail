@@ -64,6 +64,7 @@ const getFormValues = (fields) =>
 /**
  * Send a POST request to the `/emails` endpoint.
  * @param {*} values An object containing the email values.
+ * @returns a promise for further processing.
  */
 const postEmail = (values) =>
   fetch("/emails", {
@@ -85,6 +86,7 @@ const postEmail = (values) =>
  * Send a PUT request to the `emails/:id` endpoint.
  * @param {*} emailId ID of the email to update.
  * @param {*} values Object containing the values to be updated.
+ * @returns a promise for further processing.
  */
 const updateEmail = (emailId, values) =>
   fetch(`/emails/${emailId}`, {
@@ -244,20 +246,29 @@ const flash = (message, tag) => {
   }, 3000);
 };
 
+/**
+ * Write an individual email message to the screen.
+ * @param {*} email An individual email message
+ * @param {*} sentMailbox Message is from the sent mailbox. Default is false.
+ * @returns a div containing the message.
+ */
 const messageWriter = (email, sentMailbox = false) => {
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email-display");
+
   const emailHeader = document.createElement("div");
   emailHeader.classList.add("email-display-header");
   emailHeader.innerHTML = `<p><strong>From:</strong> ${email.sender}</p>
   <p><strong>To:</strong> ${email.recipients}</p>
   <p><strong>Subject:</strong> ${email.subject}</p>
   <p><strong>Timestamp:</strong> ${email.timestamp}</p>`;
+
   const replyButton = document.createElement("button");
   replyButton.setAttribute("id", "reply");
   replyButton.innerText = "Reply";
   replyButton.classList.add("btn", "btn-outline-primary");
   emailHeader.appendChild(replyButton);
+
   if (!sentMailbox) {
     const archiveButton = document.createElement("button");
     archiveButton.setAttribute("id", "archive");
@@ -277,16 +288,26 @@ const messageWriter = (email, sentMailbox = false) => {
   emailDiv.appendChild(emailBody);
   return emailDiv;
 };
+
+/**
+ * Event handler for email submission to the API. It validates the data
+ * then calls the API
+ * @param {Event} event A DOM Event
+ */
 const composeSubmitHander = (event) => {
+  
   event.preventDefault();
+  // Remove all feedback
   clearErrorMessages();
   clearIsValid();
+
   const form = event.target;
   const fields = getFields(form);
   requiredFieldValidator(fields.body);
   requiredFieldValidator(fields.subject);
   requiredFieldValidator(fields.recipients);
   emailAddressValidator(fields.recipients);
+
   if (formIsValid()) {
     const values = getFormValues(fields);
     postEmail(values)
@@ -306,6 +327,12 @@ const composeSubmitHander = (event) => {
       });
   } else return;
 };
+
+/**
+ * Handle the clicking of an individual email.
+ * @param {Event} event A DOM event.
+ * calls load_message function.
+ */
 const emailClickHandler = (event) => {
   const target = getEmailDiv(event.target);
   const { id: emailId, sent } = target.dataset;
@@ -315,13 +342,25 @@ const emailClickHandler = (event) => {
   );
   return load_message(emailId, isSent);
 };
+
+/**
+ * Handle the clicking of a reply button.
+ * @param {Event} event A DOM event.
+ * @param {Object} email An object containing the email to respond to.
+ */
 const replyButtonHandler = (event, email) => {
   const subject = `Re: ${email.subject}`;
   const recipients = email.sender;
   const body = `On ${email.timestamp}, ${recipients} said:"${email.body}"`;
   const fields = { recipients, body, subject };
+  
   compose_email(event, fields);
 };
+
+/**
+ * Handle the click of an archive button.
+ * @param {Event} event A DOM event.
+ */
 const archiveButtonHandler = (event) => {
   const button = event.target;
   const { id: emailID, archived: isArchived } = button.dataset;
@@ -344,6 +383,11 @@ const archiveButtonHandler = (event) => {
     })
     .catch((error) => console.log(error));
 };
+
+/**
+ * Add event listeners to buttons and load the inbox mailbox when the DOM
+ * content is loaded.
+ */
 document.addEventListener("DOMContentLoaded", function () {
   document
     .querySelector("#inbox")
@@ -360,6 +404,12 @@ document.addEventListener("DOMContentLoaded", function () {
     .addEventListener("submit", composeSubmitHander);
   load_mailbox("inbox");
 });
+
+/**
+ * 
+ * @param {*} event 
+ * @param {*} message 
+ */
 function compose_email(event, message = BLANK_EMAIL) {
   clearErrorMessages();
   clearIsValid();
@@ -371,6 +421,11 @@ function compose_email(event, message = BLANK_EMAIL) {
     form.elements[field].value = message[field];
   });
 }
+
+/**
+ * Load mailbox content onto the page.
+ * @param {string} mailbox The name of the mailbox to be loaded.
+ */
 function load_mailbox(mailbox) {
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
@@ -384,12 +439,21 @@ function load_mailbox(mailbox) {
       emails.forEach((email) => inboxMessageWriter(content, email, mailbox));
     });
 }
+
+/**
+ * Load an individual message onto the screen.
+ * @param {*} emailId ID of the email to load.
+ * @param {boolean} isSent A boolean that determines if the email has been sent.
+ */
 function load_message(emailId, isSent) {
   const sent = isSent ? true : false;
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
+  
   const content = document.querySelector("#emails-view");
   content.innerHTML = "";
+
+  // Get an email message.
   fetch(`/emails/${emailId}`)
     .then((response) => response.json())
     .then((email) => {
