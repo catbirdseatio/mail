@@ -1,9 +1,9 @@
 # Mail
 
-A project that allows users to send emails to other users that belong to the system.
+A project that allows users to send emails to other users that belong to the system. The system has capabilities for the sending, viewing, archiving, and replying of messages sent to users that are registered in the the project.
 
 See it live: [email.catbirdseat.io](https://mail.catbirdseat.io)
-Video Demo: [YouTube](#)
+Video Demo: [YouTube](https://youtu.be/XRWF_US7Ovw)
 
 [![CI/CD Pipeline](https://github.com/catbirdseatio/mail/actions/workflows/mail.yml/badge.svg)](https://github.com/catbirdseatio/mail/actions/workflows/mail.yml)
 
