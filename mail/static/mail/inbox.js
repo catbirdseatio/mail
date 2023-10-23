@@ -191,6 +191,7 @@ const errorFeedbackWriter = (field, message) => {
  * @param {*} mailbox The mailbox that the email belongs to.
  */
 const inboxMessageWriter = (container, email, mailbox) => {
+  console.log(email);
   const emailDiv = document.createElement("div");
   emailDiv.classList.add("email");
   emailDiv.dataset.id = email.id;
@@ -201,19 +202,19 @@ const inboxMessageWriter = (container, email, mailbox) => {
   const rightDiv = document.createElement("div");
   rightDiv.classList.add("right-div");
   leftDiv.classList.add("left-div");
-  
+
   const senderSpan = document.createElement("span");
   senderSpan.classList.add("sender");
   senderSpan.innerText = email.sender;
-  
+
   const subjectSpan = document.createElement("span");
   subjectSpan.classList.add("subject");
   subjectSpan.innerText = email.subject;
   rightDiv.innerText = email.timestamp;
-  
+
   if (email.read) {
-    emailDiv.classList.add("bg-light");
-    rightDiv.classList.add("text-secondary");
+    emailDiv.classList.add("bg-secondary");
+    leftDiv.classList.add("text-white");
   } else {
     emailDiv.classList.add("bg-white");
     rightDiv.classList.add("text-muted");
@@ -295,7 +296,6 @@ const messageWriter = (email, sentMailbox = false) => {
  * @param {Event} event A DOM Event
  */
 const composeSubmitHander = (event) => {
-  
   event.preventDefault();
   // Remove all feedback
   clearErrorMessages();
@@ -310,10 +310,11 @@ const composeSubmitHander = (event) => {
 
   if (formIsValid()) {
     const values = getFormValues(fields);
+
     postEmail(values)
       .then((data) => {
         flash(data.message, "success");
-        load_mailbox("inbox");
+        load_mailbox("sent");
       })
       .catch((error) => {
         if (error.status === 400) {
@@ -349,11 +350,13 @@ const emailClickHandler = (event) => {
  * @param {Object} email An object containing the email to respond to.
  */
 const replyButtonHandler = (event, email) => {
-  const subject = `Re: ${email.subject}`;
+  // If the reply is another reply, remove the 'Re: '
+  const originalSubject = email.subject.replace("Re: ", "");
+  const subject = `Re: ${originalSubject}`;
   const recipients = email.sender;
   const body = `On ${email.timestamp}, ${recipients} said:"${email.body}"`;
   const fields = { recipients, body, subject };
-  
+
   compose_email(event, fields);
 };
 
@@ -366,6 +369,7 @@ const archiveButtonHandler = (event) => {
   const { id: emailID, archived: isArchived } = button.dataset;
   const archived = parseInt(isArchived) ? false : true;
   const body = JSON.stringify({ archived });
+
   fetch(`/emails/${emailID}`, {
     method: "PUT",
     headers: { "X-CSRFToken": getCookie("csrftoken") },
@@ -374,10 +378,7 @@ const archiveButtonHandler = (event) => {
     .then((response) => {
       if (!response.ok) throw new Error(response.errorMessage);
       else {
-        button.dataset.archived = archived;
-        button.classList.toggle("btn-outline-danger");
-        button.classList.toggle("btn-outline-info");
-        button.innerText = archived ? "Unarchive" : "Archive";
+        load_mailbox("inbox");
         flash(flashMessage, "info");
       }
     })
@@ -402,20 +403,24 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .querySelector("#compose-form")
     .addEventListener("submit", composeSubmitHander);
+
   load_mailbox("inbox");
 });
 
 /**
- * 
- * @param {*} event 
- * @param {*} message 
+ *
+ * @param {*} event
+ * @param {*} message
  */
 function compose_email(event, message = BLANK_EMAIL) {
   clearErrorMessages();
   clearIsValid();
+
   const form = document.querySelector("#compose-form");
   document.querySelector("#emails-view").style.display = "none";
   document.querySelector("#compose-view").style.display = "block";
+
+  // For every key in message, fill the field with data
   Object.keys(message).forEach((field) => {
     form.elements[field].value = "";
     form.elements[field].value = message[field];
@@ -436,7 +441,12 @@ function load_mailbox(mailbox) {
   fetch(`/emails/${mailbox}`)
     .then((response) => response.json())
     .then((emails) => {
-      emails.forEach((email) => inboxMessageWriter(content, email, mailbox));
+      if (emails.length > 0) {
+        emails.forEach((email) => inboxMessageWriter(content, email, mailbox));
+      } else {
+        content.innerHTML +=
+          "<p><strong>There are no emails in this mailbox.</strong></p>";
+      }
     });
 }
 
@@ -449,7 +459,7 @@ function load_message(emailId, isSent) {
   const sent = isSent ? true : false;
   document.querySelector("#emails-view").style.display = "block";
   document.querySelector("#compose-view").style.display = "none";
-  
+
   const content = document.querySelector("#emails-view");
   content.innerHTML = "";
 
